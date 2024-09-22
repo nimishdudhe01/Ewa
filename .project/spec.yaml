@@ -129,8 +129,8 @@ execution:
   resources:
     gpu:
       requested: 1
-      memoryGB: 7
-    sharedMemoryGB: 5
+      memoryGB: 4
+    sharedMemoryMB: 1024
   mounts:
     - type: project
       target: /project/
