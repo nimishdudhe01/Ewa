@@ -1,0 +1,142 @@
+specVersion: v2
+specMinorVersion: 1
+meta:
+  name: emotional-wellbeing-assistant
+  image: project-mental-health-assistant
+  description: An AI-based personal assistant project for mental health analysis using sentiment detection on text and voice inputs.
+  labels: [AI, mental health, sentiment-analysis, voice-analysis]
+  createdOn: "2024-09-23T12:00:00Z"
+  defaultBranch: main
+
+layout:
+  - path: code/
+    type: code
+    storage: git
+  - path: models/
+    type: models
+    storage: gitlfs
+  - path: data/
+    type: data
+    storage: gitlfs
+  - path: data/scratch/
+    type: data
+    storage: gitignore
+
+environment:
+  base:
+    registry: docker.io
+    image: tensorflow/tensorflow:2.12.0-gpu  # TensorFlow Docker Image from Docker Hub
+    build_timestamp: "20231102150513"
+    name: TensorFlow
+    supported_architectures: []
+    cuda_version: "12.0"
+    description: A TensorFlow 2.12 GPU Base with CUDA 12.0 from Docker Hub
+    entrypoint_script: ""
+    labels:
+      - cuda12.0
+      - tensorflow2.12
+    apps:
+      - name: mental-health-chat
+        type: custom
+        class: webapp
+        start_command: cd /project/code/ && PROXY_PREFIX=$PROXY_PREFIX python3 -m chatui
+        health_check_command: curl -f "http://localhost:8080/"
+        stop_command: pkill -f "^python3 -m chatui"
+        user_msg: "Launching Mental Health Chat App..."
+        logfile_path: "/project/logs/chatui.log"
+        timeout_seconds: 0
+        icon_url: ""
+        webapp_options:
+          autolaunch: true
+          port: "8080"
+          proxy:
+            trim_prefix: true
+          url: http://localhost:8080/
+
+      - name: jupyterlab
+        type: jupyterlab
+        class: webapp
+        start_command: jupyter lab --allow-root --port 8888 --ip 0.0.0.0 --no-browser --NotebookApp.base_url=\$PROXY_PREFIX --NotebookApp.default_url=/lab --NotebookApp.allow_origin='*'
+        health_check_command: '[ \$(echo url=\$(jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d'' '' | grep -v ''Currently'') | curl -o /dev/null -s -w ''%{http_code}'' --config -) == ''200'' ]'
+        stop_command: jupyter lab stop 8888
+        user_msg: "Launching JupyterLab..."
+        logfile_path: "/project/logs/jupyterlab.log"
+        timeout_seconds: 0
+        icon_url: ""
+        webapp_options:
+          autolaunch: true
+          port: "8888"
+          proxy:
+            trim_prefix: false
+          url_command: jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d' ' | grep -v 'Currently'
+
+      - name: tensorboard
+        type: tensorboard
+        class: webapp
+        start_command: tensorboard --logdir \$TENSORBOARD_LOGS_DIRECTORY --path_prefix=\$PROXY_PREFIX --bind_all
+        health_check_command: '[ \$(curl -o /dev/null -s -w ''%{http_code}'' http://localhost:\$TENSORBOARD_PORT\$PROXY_PREFIX/) == ''200'' ]'
+        stop_command: pkill tensorboard
+        user_msg: "Launching TensorBoard..."
+        logfile_path: "/project/logs/tensorboard.log"
+        timeout_seconds: 0
+        icon_url: ""
+        webapp_options:
+          autolaunch: true
+          port: "6006"
+          proxy:
+            trim_prefix: false
+          url: http://localhost:6006
+
+    programming_languages:
+      - python3
+    icon_url: ""
+    image_version: 1.0.2
+    os: linux
+    os_distro: ubuntu
+    os_distro_release: "22.04"
+    schema_version: v2
+    user_info:
+      uid: ""
+      gid: ""
+      username: ""
+
+    package_managers:
+      - name: apt
+        binary_path: /usr/bin/apt
+        installed_packages:
+          - curl
+          - git
+          - git-lfs
+          - vim
+          - nano  # Added nano text editor
+
+      - name: pip
+        binary_path: /usr/local/bin/pip
+        installed_packages:
+          - jupyterlab==4.0.7
+          - tensorflow==2.5
+          - transformers==4.6.0
+          - deepspeech==0.9.3
+          - pandas==1.2.4  # Added pandas library
+          - numpy==1.21.0  # Added numpy library
+
+    package_manager_environment:
+      name: ""
+      target: ""
+
+execution:
+  apps: []
+  resources:
+    gpu:
+      requested: 1
+      memoryGB: 7
+    sharedMemoryGB: 5
+  mounts:
+    - type: project
+      target: /project/
+      description: Project directory for the mental health assistant.
+      options: rw
+    - type: volume
+      target: /data/tensorboard/logs/
+      description: Tensorboard Log Files for training model analysis.
+      options: volumeName=tensorboard-logs-volume
