@@ -21,21 +21,37 @@ layout:
   - path: data/scratch/
     type: data
     storage: gitignore
-
 environment:
   base:
     registry: docker.io
-    image: tensorflow/tensorflow:latest-gpu  # TensorFlow Docker Image from Docker Hub
+    image: tensorflow/tensorflow:2.15.0-gpu
     build_timestamp: "20231102150513"
     name: TensorFlow
     supported_architectures: []
-    cuda_version: "12.0"
-    description: A TensorFlow 2.12 GPU Base with CUDA 12.0 from Docker Hub
+    cuda_version: "12.2"
+    description: A TensorFlow 2.15.0 GPU Base with CUDA 12.2 from Docker Hub
     entrypoint_script: ""
     labels:
-      - cuda12.0
+      - cuda12.2
       - tensorflow-gpu
     apps:
+      - name: jupyterlab
+        type: jupyterlab
+        class: webapp
+        start_command: jupyter lab --allow-root --port 8888 --ip 0.0.0.0 --no-browser
+        health_check_command: '[ \$(echo url=\$(jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d'' '' | grep -v ''Currently'') | curl -o /dev/null -s -w ''%{http_code}'' --config -) == ''200'' ]'
+        stop_command: jupyter lab stop 8888
+        user_msg: "Launching JupyterLab..."
+        logfile_path: "/project/logs/jupyterlab.log"
+        timeout_seconds: 0
+        icon_url: ""
+        webapp_options:
+          autolaunch: true
+          port: "8888"
+          proxy:
+            trim_prefix: false
+          url_command: jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d' ' | grep -v 'Currently'
+
       - name: mental-health-chat
         type: custom
         class: webapp
@@ -52,23 +68,6 @@ environment:
           proxy:
             trim_prefix: true
           url: http://localhost:8080/
-
-      - name: jupyterlab
-        type: jupyterlab
-        class: webapp
-        start_command: jupyter lab --allow-root --port 8888 --ip 0.0.0.0 --no-browser --NotebookApp.token=''
-        health_check_command: '[ \$(echo url=\$(jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d'' '' | grep -v ''Currently'') | curl -o /dev/null -s -w ''%{http_code}'' --config -) == ''200'' ]'
-        stop_command: jupyter lab stop 8888
-        user_msg: "Launching JupyterLab..."
-        logfile_path: "/project/logs/jupyterlab.log"
-        timeout_seconds: 0
-        icon_url: ""
-        webapp_options:
-          autolaunch: true
-          port: "8888"
-          proxy:
-            trim_prefix: false
-          url_command: jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d' ' | grep -v 'Currently'
 
       - name: tensorboard
         type: tensorboard
@@ -125,12 +124,13 @@ environment:
       target: ""
 
 execution:
-  apps: []
   resources:
     gpu:
       requested: 1
-      memoryGB: 7  # Increased GPU memory allocation
-    sharedMemoryMB: 1024
+      memoryGB: 7  # Adjusted to request 7 GB VRAM
+  ports:
+    - "8888:8888"  # Exposing the port for JupyterLab
+
   mounts:
     - type: project
       target: /project/
