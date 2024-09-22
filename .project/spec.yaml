@@ -114,7 +114,7 @@ environment:
         binary_path: /usr/local/bin/pip
         installed_packages:
           - jupyterlab==4.0.7
-          - tensorflow==2.5
+          - tensorflow==2.12  # Use a version compatible with CUDA 12.0
           - transformers==4.6.0
           - deepspeech==0.9.3
           - pandas==1.2.4  # Added pandas library
@@ -129,7 +129,7 @@ execution:
   resources:
     gpu:
       requested: 1
-      memoryGB: 4
+      memoryGB: 7  # Increased GPU memory allocation
     sharedMemoryMB: 1024
   mounts:
     - type: project
