@@ -25,7 +25,7 @@ layout:
 environment:
   base:
     registry: nvcr.io
-    image: nvcr.io/nvidia/tensorflow:24.08-tf2-py3
+    image: nvidia/tensorflow:24.08-tf2-py3
     build_timestamp: "20231114175838"
     name: TensorFlow 24.08
     supported_architectures: []
