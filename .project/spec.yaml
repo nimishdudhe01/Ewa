@@ -1,143 +1,75 @@
-specVersion: v2
-specMinorVersion: 1
-meta:
-  name: emotional-wellbeing-assistant
-  image: project-mental-health-assistant
-  description: An AI-based personal assistant project for mental health analysis using sentiment detection on text and voice inputs.
-  labels: [AI, mental health, sentiment-analysis, voice-analysis]
-  createdOn: "2024-09-23T12:00:00Z"
-  defaultBranch: main
+name: ai-mental-health-assistant
+channels:
+  - defaults
+  - conda-forge
 
-layout:
-  - path: code/
-    type: code
-    storage: git
-  - path: models/
-    type: models
-    storage: gitlfs
-  - path: data/
-    type: data
-    storage: gitlfs
-  - path: data/scratch/
-    type: data
-    storage: gitignore
-environment:
-  base:
-    registry: docker.io
-    image: tensorflow/tensorflow:2.15.0-gpu
-    build_timestamp: "20231102150513"
-    name: TensorFlow
-    supported_architectures: []
-    cuda_version: "12.2"
-    description: A TensorFlow 2.15.0 GPU Base with CUDA 12.2 from Docker Hub
-    entrypoint_script: ""
-    labels:
-      - cuda12.2
-      - tensorflow-gpu
-    apps:
-      - name: jupyter-notebook
-        type: jupyter-notebook
-        class: webapp
-        start_command: jupyter server --allow-root --port 8888 --ip 0.0.0.0
-        health_check_command: '[ \$(echo url=\$(jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d'' '' | grep -v ''Currently'') | curl -o /dev/null -s -w ''%{http_code}'' --config -) == ''200'' ]'
-        stop_command: jupyter notebook stop 8888
-        user_msg: "Launching JupyterLab..."
-        logfile_path: "/project/logs/jupyterlab.log"
-        timeout_seconds: 0
-        icon_url: ""
-        webapp_options:
-          autolaunch: true
-          port: "8888"
-          proxy:
-            trim_prefix: false
-          url_command: jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d' ' | grep -v 'Currently'
+dependencies:
+  # Core Libraries
+  - python=3.9
+  - pip
+  - tensorflow-gpu=2.12.0  # Ensure compatibility with CUDA
+  - pytorch=2.0.0
+  - cudatoolkit=12.2
+  - cudnn=8.9
+  - transformers=4.31.0
+  - numpy
+  - pandas
+  - scikit-learn
+  - tokenizers
+  
+  # NLP and Data Preprocessing
+  - nltk
+  - spacy
+  - textblob
+  - tqdm
 
-      - name: mental-health-chat
-        type: custom
-        class: webapp
-        start_command: cd /project/code/ && PROXY_PREFIX=$PROXY_PREFIX python3 -m chatui
-        health_check_command: curl -f "http://localhost:8080/"
-        stop_command: pkill -f "^python3 -m chatui"
-        user_msg: "Launching Mental Health Chat App..."
-        logfile_path: "/project/logs/chatui.log"
-        timeout_seconds: 0
-        icon_url: ""
-        webapp_options:
-          autolaunch: true
-          port: "8080"
-          proxy:
-            trim_prefix: true
-          url: http://localhost:8080/
+  # Data Visualization
+  - matplotlib
+  - seaborn
+  - tensorboard
 
-      - name: tensorboard
-        type: tensorboard
-        class: webapp
-        start_command: tensorboard --logdir \$TENSORBOARD_LOGS_DIRECTORY --path_prefix=\$PROXY_PREFIX --bind_all
-        health_check_command: '[ \$(curl -o /dev/null -s -w ''%{http_code}'' http://localhost:\$TENSORBOARD_PORT\$PROXY_PREFIX/) == ''200'' ]'
-        stop_command: pkill tensorboard
-        user_msg: "Launching TensorBoard..."
-        logfile_path: "/project/logs/tensorboard.log"
-        timeout_seconds: 0
-        icon_url: ""
-        webapp_options:
-          autolaunch: true
-          port: "6006"
-          proxy:
-            trim_prefix: false
-          url: http://localhost:6006
+  # Audio Processing
+  - pydub
+  - librosa
+  - SpeechRecognition
 
-    programming_languages:
-      - python3
-    icon_url: ""
-    image_version: 1.0.2
-    os: linux
-    os_distro: ubuntu
-    os_distro_release: "22.04"
-    schema_version: v2
-    user_info:
-      uid: ""
-      gid: ""
-      username: ""
+  # Database and Backend
+  - sqlalchemy
+  - fastapi
+  - flask
+  - gunicorn
+  - dask
+  - pydantic
 
-    package_managers:
-      - name: apt
-        binary_path: /usr/bin/apt
-        installed_packages:
-          - curl
-          - git
-          - git-lfs
-          - vim
-          - nano  # Added nano text editor
+  # JupyterLab for Python Notebooks
+  - jupyterlab
+  - ipykernel  # To ensure compatibility with Jupyter Notebooks
 
-      - name: pip
-        binary_path: /usr/local/bin/pip
-        installed_packages:
-          - jupyter
-          - tensorflow==2.12  # Use a version compatible with CUDA 12.0
-          - transformers==4.6.0
-          - deepspeech==0.9.3
-          - pandas  # Added pandas library
-          - numpy  # Added numpy library
-          - chatui
+  # Web Development Tools (optional)
+  - nodejs  # For frontend development if needed
 
-    package_manager_environment:
-      name: ""
-      target: ""
+  # Docker for Local Development
+  - docker-py
 
-execution:
-  resources:
-    gpu:
-      requested: 1
-      memoryGB: 7  # Adjusted to request 7 GB VRAM
-  ports:
-    - "8888:8888"  # Exposing the port for JupyterLab
+  # pip installs for libraries not available via conda
+  - pip:
+      - torch  # If not installed via conda
+      - tensorflow-addons
+      - soundfile  # For audio processing
+      - fastapi[all]  # Full FastAPI dependencies
+      - opencv-python  # Optional for facial recognition if you plan to add
+      - transformers  # Hugging Face models
+      - tokenizers  # Hugging Face tokenizers library
+      - pydub
+      - librosa
+      - jupyter-tensorboard  # TensorBoard integration in Jupyter
+      - jupyterlab-code-formatter  # Optional for code formatting
 
-  mounts:
-    - type: project
-      target: /project/
-      description: Project directory for the mental health assistant.
-      options: rw
-    - type: volume
-      target: /data/tensorboard/logs/
-      description: Tensorboard Log Files for training model analysis.
-      options: volumeName=tensorboard-logs-volume
+# Additional system configurations
+system:
+  env_vars:
+    - CUDNN_VERSION=8.9.0
+    - CUDA_VERSION=12.2
+  paths:
+    - /usr/local/cuda-12.2/bin
+  gpu: true
