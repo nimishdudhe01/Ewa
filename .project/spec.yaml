@@ -1,11 +1,10 @@
 specVersion: v2
 specMinorVersion: 1
-
 meta:
-  name: mental-health-assistant
+  name: emotional-wellbeing-assistant
   image: project-mental-health-assistant
-  description: An AI-based personal assistant project for mental health using sentiment detection on text and voice inputs.
-  labels: [AI, mental-health, sentiment-analysis, voice-analysis]
+  description: An AI-based personal assistant project for mental health analysis using sentiment detection on text and voice inputs.
+  labels: [AI, mental health, sentiment-analysis, voice-analysis]
   createdOn: "2024-09-23T12:00:00Z"
   defaultBranch: main
 
@@ -25,45 +24,28 @@ layout:
 
 environment:
   base:
-    registry: docker.io
-    image: jupyter/tensorflow-notebook  # Jupyter base notebook Docker image from Docker Hub
-    build_timestamp: "20240923120000"
-    name: JupyterBase
+    registry: nvcr.io
+    image: nvcr.io/nvidia/tensorflow:24.08-tf2-py3
+    build_timestamp: "20231114175838"
+    name: TensorFlow 24.08
     supported_architectures: []
-    cuda_version: "12.0"
-    description: Jupyter base notebook with TensorFlow, Transformers, and other dependencies.
+    cuda_version: ""
+    description: TensorFlow 24.08 Base with Python
     entrypoint_script: ""
     labels:
-      - jupyterlab
+      - ubuntu
+      - python3
       - tensorflow
-      - cuda12.0
     apps:
-      - name: mental-health-chat
-        type: custom
-        class: webapp
-        start_command: cd /project/code/ && PROXY_PREFIX=$PROXY_PREFIX python3 -m chatui
-        health_check_command: curl -f "http://localhost:8080/"
-        stop_command: pkill -f "^python3 -m chatui"
-        user_msg: "Launching Mental Health Chat App..."
-        logfile_path: "/project/logs/chatui.log"
-        timeout_seconds: 0
-        icon_url: ""
-        webapp_options:
-          autolaunch: true
-          port: "8080"
-          proxy:
-            trim_prefix: true
-          url: http://localhost:8080/
-
       - name: jupyterlab
         type: jupyterlab
         class: webapp
         start_command: jupyter lab --allow-root --port 8888 --ip 0.0.0.0 --no-browser --NotebookApp.base_url=\$PROXY_PREFIX --NotebookApp.default_url=/lab --NotebookApp.allow_origin='*'
-        health_check_command: '[ \$(echo url=\$(jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d'' '' | grep -v ''Currently'') | curl -o /dev/null -s -w ''%{http_code}'' --config -) == ''200'' ]'
+        health_check_command: '[ \$(echo url=\$(jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d'' '' | grep -v ''Currently'' | sed "s@/?@/lab?@g") | curl -o /dev/null -s -w ''%{http_code}'' --config -) == ''200'' ]'
         stop_command: jupyter lab stop 8888
         user_msg: "Launching JupyterLab..."
         logfile_path: "/project/logs/jupyterlab.log"
-        timeout_seconds: 0
+        timeout_seconds: 60
         icon_url: ""
         webapp_options:
           autolaunch: true
@@ -71,40 +53,6 @@ environment:
           proxy:
             trim_prefix: false
           url_command: jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d' ' | grep -v 'Currently'
-
-      - name: tensorboard
-        type: tensorboard
-        class: webapp
-        start_command: tensorboard --logdir \$TENSORBOARD_LOGS_DIRECTORY --path_prefix=\$PROXY_PREFIX --bind_all
-        health_check_command: '[ \$(curl -o /dev/null -s -w ''%{http_code}'' http://localhost:\$TENSORBOARD_PORT\$PROXY_PREFIX/) == ''200'' ]'
-        stop_command: pkill tensorboard
-        user_msg: "Launching TensorBoard..."
-        logfile_path: "/project/logs/tensorboard.log"
-        timeout_seconds: 0
-        icon_url: ""
-        webapp_options:
-          autolaunch: true
-          port: "6006"
-          proxy:
-            trim_prefix: false
-          url: http://localhost:6006
-
-      - name: vscode
-        type: vscode
-        class: webapp
-        start_command: code-server --bind-addr 0.0.0.0:8443 --auth none --disable-telemetry --disable-update-check
-        health_check_command: curl -f "http://localhost:8443/"
-        stop_command: pkill -f "code-server"
-        user_msg: "Launching VSCode..."
-        logfile_path: "/project/logs/vscode.log"
-        timeout_seconds: 0
-        icon_url: ""
-        webapp_options:
-          autolaunch: true
-          port: "8443"
-          proxy:
-            trim_prefix: false
-          url: http://localhost:8443/
 
     programming_languages:
       - python3
@@ -126,29 +74,24 @@ environment:
           - curl
           - git
           - git-lfs
+          - python3
+          - gcc
+          - python3-dev
+          - python3-pip
           - vim
-          - nano  # Adding nano text editor
 
       - name: pip
         binary_path: /usr/local/bin/pip
         installed_packages:
-          - transformers==4.31.0  # Hugging Face for NLP models
-          - deepspeech==0.9.3  # For audio speech-to-text processing
-          - pandas==1.5.3  # Data manipulation and analysis
-          - numpy==1.23.5  # Array and matrix operations
-          - scikit-learn==1.1.3  # Machine learning library
-          - librosa==0.9.2  # Audio processing
-          - pydub==0.25.1  # Audio segment handling
-          - SpeechRecognition==3.8.1  # Speech-to-text handling
-          - opencv-python==4.7.0  # Optional for facial recognition
-          - tqdm  # Progress bar for model training
-          - tensorboard==2.12.0  # TensorBoard for visualizing model performance
-
-      - name: nodejs
-        binary_path: /usr/bin/node
-        installed_packages:
-          - nodejs  # For React development
-          - npm  # Node package manager
+          - jupyterlab==4.0.7
+          - pandas
+          - numpy
+          - transformers
+          - PyGObject  # For GTK
+          - Flask
+          - fastapi
+          - matplotlib
+          - scikit-learn
 
     package_manager_environment:
       name: ""
@@ -158,9 +101,9 @@ execution:
   apps: []
   resources:
     gpu:
-      requested: 1
-      memoryGB: 7
-    sharedMemoryGB: 5
+      requested: 0
+    sharedMemoryMB: 0
+  secrets: []
   mounts:
     - type: project
       target: /project/
