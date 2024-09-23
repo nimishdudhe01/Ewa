@@ -1,27 +1,30 @@
 specVersion: v2
-specMinorVersion: 1
+specMinorVersion: 2
 meta:
   name: emotional-wellbeing-assistant
   image: project-mental-health-assistant
-  description: An AI-based personal assistant project for mental health analysis using sentiment detection on text and voice inputs.
-  labels: [AI, mental health, sentiment-analysis, voice-analysis]
+  description: An AI-based personal assistant project for mental health analysis using
+    sentiment detection on text and voice inputs.
+  labels:
+  - AI
+  - mental health
+  - sentiment-analysis
+  - voice-analysis
   createdOn: "2024-09-23T12:00:00Z"
   defaultBranch: main
-
 layout:
-  - path: code/
-    type: code
-    storage: git
-  - path: models/
-    type: models
-    storage: gitlfs
-  - path: data/
-    type: data
-    storage: gitlfs
-  - path: data/scratch/
-    type: data
-    storage: gitignore
-
+- path: code/
+  type: code
+  storage: git
+- path: models/
+  type: models
+  storage: gitlfs
+- path: data/
+  type: data
+  storage: gitlfs
+- path: data/scratch/
+  type: data
+  storage: gitignore
 environment:
   base:
     registry: nvcr.io
@@ -33,29 +36,32 @@ environment:
     description: TensorFlow 24.08 Base with Python
     entrypoint_script: ""
     labels:
-      - ubuntu
-      - python3
-      - tensorflow
+    - ubuntu
+    - python3
+    - tensorflow
     apps:
-      - name: jupyterlab
-        type: jupyterlab
-        class: webapp
-        start_command: jupyter lab --allow-root --port 8888 --ip 0.0.0.0 --no-browser --NotebookApp.base_url=\$PROXY_PREFIX --NotebookApp.default_url=/lab --NotebookApp.allow_origin='*'
-        health_check_command: '[ \$(echo url=\$(jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d'' '' | grep -v ''Currently'' | sed "s@/?@/lab?@g") | curl -o /dev/null -s -w ''%{http_code}'' --config -) == ''200'' ]'
-        stop_command: jupyter lab stop 8888
-        user_msg: "Launching JupyterLab..."
-        logfile_path: "/project/logs/jupyterlab.log"
-        timeout_seconds: 60
-        icon_url: ""
-        webapp_options:
-          autolaunch: true
-          port: "8888"
-          proxy:
-            trim_prefix: false
-          url_command: jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d' ' | grep -v 'Currently'
-
+    - name: jupyterlab
+      type: jupyterlab
+      class: webapp
+      start_command: jupyter lab --allow-root --port 8888 --ip 0.0.0.0 --no-browser
+        --NotebookApp.base_url=\$PROXY_PREFIX --NotebookApp.default_url=/lab --NotebookApp.allow_origin='*'
+      health_check_command: '[ \$(echo url=\$(jupyter lab list | head -n 2 | tail
+        -n 1 | cut -f1 -d'' '' | grep -v ''Currently'' | sed "s@/?@/lab?@g") | curl
+        -o /dev/null -s -w ''%{http_code}'' --config -) == ''200'' ]'
+      stop_command: jupyter lab stop 8888
+      user_msg: Launching JupyterLab...
+      logfile_path: /project/logs/jupyterlab.log
+      timeout_seconds: 60
+      icon_url: ""
+      webapp_options:
+        autolaunch: true
+        port: "8888"
+        proxy:
+          trim_prefix: false
+        url_command: jupyter lab list | head -n 2 | tail -n 1 | cut -f1 -d' ' | grep
+          -v 'Currently'
     programming_languages:
-      - python3
+    - python3
     icon_url: ""
     image_version: 1.0.2
     os: linux
@@ -66,37 +72,33 @@ environment:
       uid: ""
       gid: ""
       username: ""
-
     package_managers:
-      - name: apt
-        binary_path: /usr/bin/apt
-        installed_packages:
-          - curl
-          - git
-          - git-lfs
-          - python3
-          - gcc
-          - python3-dev
-          - python3-pip
-          - vim
-
-      - name: pip
-        binary_path: /usr/local/bin/pip
-        installed_packages:
-          - jupyterlab==4.0.7
-          - pandas
-          - numpy
-          - transformers
-          - PyGObject  # For GTK
-          - Flask
-          - fastapi
-          - matplotlib
-          - scikit-learn
-
+    - name: apt
+      binary_path: /usr/bin/apt
+      installed_packages:
+      - curl
+      - git
+      - git-lfs
+      - python3
+      - gcc
+      - python3-dev
+      - python3-pip
+      - vim
+    - name: pip
+      binary_path: /usr/local/bin/pip
+      installed_packages:
+      - jupyterlab==4.0.7
+      - pandas
+      - numpy
+      - transformers
+      - PyGObject
+      - Flask
+      - fastapi
+      - matplotlib
+      - scikit-learn
     package_manager_environment:
       name: ""
       target: ""
-
 execution:
   apps: []
   resources:
@@ -105,11 +107,11 @@ execution:
     sharedMemoryMB: 0
   secrets: []
   mounts:
-    - type: project
-      target: /project/
-      description: Project directory for the mental health assistant.
-      options: rw
-    - type: volume
-      target: /data/tensorboard/logs/
-      description: TensorBoard log files for training model analysis.
-      options: volumeName=tensorboard-logs-volume
+  - type: project
+    target: /project/
+    description: Project directory for the mental health assistant.
+    options: rw
+  - type: volume
+    target: /data/tensorboard/logs/
+    description: TensorBoard log files for training model analysis.
+    options: volumeName=tensorboard-logs-volume
